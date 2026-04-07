@@ -1,0 +1,138 @@
+const fileInput = document.getElementById('fileInput');
+const viewer = document.getElementById('viewer');
+const sortBtn = document.getElementById('sortToggle');
+const bindingBtn = document.getElementById('bindingToggle');
+const themeBtn = document.getElementById('themeToggle');
+const controls = document.getElementById('controls');
+
+let isSortMode = false;
+let isRightBinding = true;
+let uiVisible = true;
+let dragged = null;
+
+// 画像読み込み
+fileInput.addEventListener('change', (e) => {
+  const files = Array.from(e.target.files);
+  viewer.innerHTML = '';
+  createSpreads(files);
+});
+
+// UI表示/非表示切替
+document.body.addEventListener('click', (e) => {
+  if (controls.contains(e.target)) return;
+  uiVisible = !uiVisible;
+  controls.classList.toggle('hidden', !uiVisible);
+});
+
+// テーマ切替
+themeBtn.onclick = (e) => {
+  e.stopPropagation();
+  document.body.classList.toggle('dark');
+};
+
+// 綴じ方向切替
+bindingBtn.onclick = (e) => {
+  e.stopPropagation();
+  isRightBinding = !isRightBinding;
+  bindingBtn.textContent = isRightBinding ? '右綴じ' : '左綴じ';
+  applyBinding();
+};
+
+// 見開きスプレッド作成
+function createSpreads(files) {
+  let pageNum = 1;
+
+  if (files[0]) viewer.appendChild(createSpread([files[0]], pageNum++));
+
+  for (let i = 1; i < files.length; i += 2) {
+    const pair = [files[i], files[i + 1]].filter(Boolean);
+    viewer.appendChild(createSpread(pair, pageNum));
+    pageNum += pair.length;
+  }
+
+  applyBinding();
+}
+
+// スプレッド作成
+function createSpread(pages, pageNum) {
+  const spread = document.createElement('div');
+  spread.className = 'spread';
+
+  pages.forEach(file => {
+    const page = document.createElement('div');
+    page.className = 'page';
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    page.appendChild(img);
+    spread.appendChild(page);
+  });
+const label = document.createElement('div');
+  label.className = 'page-number';
+  label.textContent = pages.length === 2 ? `${pageNum}-${pageNum+1}` : `${pageNum}`;
+  spread.appendChild(label);
+
+
+const viewer = document.getElementById('viewer');
+const sortBtn = document.getElementById('sortBtn');
+
+let isSortMode = false;
+
+// ボタンにイベントを紐付け
+  sortBtn.addEventListener('click', () => {
+  isSortMode = !isSortMode;
+
+  // bodyにクラス付与してCSS表示を切替
+  document.body.classList.toggle('sort-mode', isSortMode);
+
+  // ボタンテキスト変更
+  sortBtn.textContent = isSortMode ? '並び替え終了' : '並び替え';
+
+  // 追加・削除ボタンも連動
+  const spreads = viewer.querySelectorAll('.spread');
+  spreads.forEach(spread => {
+    const addBtn = spread.querySelector('.add-btn');
+    const delBtn = spread.querySelector('.delete-btn');
+    if (addBtn) addBtn.style.display = isSortMode ? 'block' : 'none';
+    if (delBtn) delBtn.style.display = isSortMode ? 'block' : 'none';
+  });
+});
+
+// 並び替えドラッグ
+let dragged = null;
+function enableDrag(spread) {
+  spread.draggable = true;
+
+  spread.addEventListener('dragstart', (e) => {
+    if (!isSortMode) return e.preventDefault();
+    dragged = spread;
+  });
+
+  spread.addEventListener('dragover', (e) => e.preventDefault());
+
+  spread.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (dragged && dragged !== spread) {
+      spread.before(dragged);
+      updatePageNumbers();
+    }
+  });
+}
+
+// ページ番号更新
+function updatePageNumbers() {
+  let pageNum = 1;
+  const spreads = viewer.querySelectorAll('.spread');
+  spreads.forEach(spread => {
+    const pages = spread.querySelectorAll('.page');
+    const label = spread.querySelector('.page-number');
+    if (pages.length === 2) {
+      label.textContent = `${pageNum}-${pageNum+1}`;
+      pageNum += 2;
+    } else {
+      label.textContent = `${pageNum}`;
+      pageNum += 1;
+    }
+  });
+}
+
+
