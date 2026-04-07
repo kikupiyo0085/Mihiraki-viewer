@@ -1,0 +1,42 @@
+/* 削除ボタン */
+.delete-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  font-size: 14px;
+  background: #EF5B9C;
+  color: white;
+  display: none;
+  cursor: pointer;
+  z-index: 5;
+}
+
+/* 追加ボタン */
+.add-btn {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  font-size: 14px;
+  background: #00ada9;
+  color: white;
+  display: none;
+  cursor: pointer;
+  z-index: 5;
+}
+
+body.sort-mode .add-btn,
+body.sort-mode .delete-btn {
+  display: block; /* 並び替えモード時のみ表示 */
+}
+
+.add-btn, .delete-btn {
+  display: none; /* デフォルト非表示 */
+}
