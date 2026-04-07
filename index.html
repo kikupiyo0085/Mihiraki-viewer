@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-                <style>:root {
+<style>:root {
   --bg-main: #363838d5;
   --bg-sub: rgba(57, 65, 65, 0.795);
   --text: #fff;
@@ -228,13 +228,13 @@ body {
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>見開きビューア</title>
+  <title>MIHIRAKI</title>
   <link rel="stylesheet" href="style.css">
 
 
 
 <div class="header">
-  <div>EASY viewer</div>
+  <div>MIHIRAKI viewer</div>
   <input type="file" id="fileInput" multiple="" accept="image/*">
 </div>
 
@@ -242,14 +242,16 @@ body {
 
 <div class="bottom" id="uiBar">
   <div class="btn" onclick="toggleTheme()">theme</div>
-  <div class="btn" onclick="toggleBinding()">toji</div>
+  <div class="btn" onclick="toggleBinding()">綴じ方向</div>
   <div class="btn" onclick="toggleUI()">UI</div>
+  <div id="sortBtn" class="btn">並び替え</div>
 </div>
+
 
 <script src="script.js"></script>
 
-
-                <script>const viewer = document.getElementById('viewer');
+<script>
+const viewer = document.getElementById('viewer');
 const fileInput = document.getElementById('fileInput');
 
 let uiVisible = true;
@@ -437,5 +439,4 @@ viewer.addEventListener('touchend', () => {
 
 </script>
             
-        
-    </body>
+ </body>
