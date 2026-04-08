@@ -1,21 +1,16 @@
 const viewer = document.getElementById('viewer');
 const fileInput = document.getElementById('fileInput');
-const sortBtn = document.getElementById('sortBtn');
 const bindingBtn = document.getElementById('bindingBtn');
-const themeBtn = document.getElementById('themeToggle');
-const controls = document.getElementById('controls');
+const themeBtn = document.getElementById('themeBtn');
+const sortBtn = document.getElementById('sortBtn');
 
 let isSortMode = false;
 let isRightBinding = true;
-let uiVisible = true;
-let dragged = null;
-let isRTL = false;
-let scale = 1;
-let startDist = 0;
-let currentSpread = null;
+let selectedPage = null;
 
-
-/* 自然順ソート（重要） */
+/* =========================
+   自然順ソート
+========================= */
 function naturalSort(a, b) {
   return a.name.localeCompare(b.name, undefined, {
     numeric: true,
@@ -23,296 +18,243 @@ function naturalSort(a, b) {
   });
 }
 
-  // 見開き
-  for (let i = index; i < files.length; i += 2) {
-    const spread = document.createElement('div');
-    spread.className = 'spread';
-
-    const page1 = createPage(files[i]);
-    spread.appendChild(page1);
-
-    const gutter = document.createElement('div');
-    gutter.className = 'gutter';
-    spread.appendChild(gutter);
-
-    if (files[i + 1]) {
-      const page2 = createPage(files[i + 1]);
-      spread.appendChild(page2);
-
-      addSpreadNumber(spread, `${pageNum}-${pageNum + 1}`);
-      pageNum += 2;
-    } else {
-      addSpreadNumber(spread, `${pageNum}`);
-      pageNum++;
-    }
-
-    viewer.appendChild(spread);
-  }
-
-  updateCenter();
-
-/* ページ生成 */
-function createPage(file) {
-  const page = document.createElement('div');
-  page.className = 'page';
-
-  const img = document.createElement('img');
-  img.src = URL.createObjectURL(file);
-
-  page.appendChild(img);
-  return page;
-}
-
-/* 中央強調 */
-function updateCenter() {
-  const spreads = document.querySelectorAll('.spread');
-  spreads.forEach(s => s.classList.remove('active'));
-
-  let closest = null;
-  let min = Infinity;
-
-  spreads.forEach(s => {
-    const rect = s.getBoundingClientRect();
-    const center = rect.left + rect.width / 2;
-    const dist = Math.abs(window.innerWidth / 2 - center);
-
-    if (dist < min) {
-      min = dist;
-      closest = s;
-    }
-  });
-
-  if (closest) closest.classList.add('active');
-}
-
-viewer.addEventListener('scroll', () => {
-  requestAnimationFrame(updateCenter);
-});
-
-/* テーマ */
-function toggleTheme() {
-  document.body.classList.toggle('light');
-}
-
-/* UI */
-function toggleUI() {
-  uiVisible = !uiVisible;
-  document.querySelector('.header').classList.toggle('hiddenUI');
-  document.getElementById('uiBar').classList.toggle('hiddenUI');
-}
-
-/* 綴じ方向 */
-function toggleBinding() {
-  isRTL = !isRTL;
-  viewer.classList.toggle('rtl');
-
-  // スクロール位置を逆に補正
-  viewer.scrollLeft = viewer.scrollWidth;
-
-  const btn = document.getElementById('bindingBtn');
-  btn.textContent = isRTL ? '右綴じ' : '左綴じ';
-}
-
-/* タップでUI */
-viewer.addEventListener('click', (e) => {
-  // ボタン操作は無視
-  if (e.target.closest('.btn')) return;
-  if (e.target.closest('button')) return;
-
-  toggleUI();
-});
-
-function addSpreadNumber(spread, text) {
-  const num = document.createElement('div');
-  num.className = 'spreadNumber';
-  num.textContent = text;
-  num.style.opacity = '0.3';
-  spread.appendChild(num);
-}
-function getDistance(touches) {
-  const dx = touches[0].clientX - touches[1].clientX;
-  const dy = touches[0].clientY - touches[1].clientY;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-viewer.addEventListener('touchstart', (e) => {
-  if (e.touches.length === 2) {
-    currentSpread = e.target.closest('.spread');
-    if (!currentSpread) return;
-
-    startDist = getDistance(e.touches);
-  }
-}, { passive: false });
-
-viewer.addEventListener('touchmove', (e) => {
-  if (e.touches.length === 2 && currentSpread) {
-    e.preventDefault();
-
-    const newDist = getDistance(e.touches);
-    let newScale = scale * (newDist / startDist);
-
-    // 制限
-    newScale = Math.max(1, Math.min(newScale, 3));
-
-    currentSpread.style.transform = `scale(${newScale})`;
-
-    // スクロール止める
-    viewer.style.overflowX = 'hidden';
-  }
-}, { passive: false });
-
-viewer.addEventListener('touchend', () => {
-  scale = Math.max(1, scale);
-  startDist = 0;
-
-  // 戻す
-  viewer.style.overflowX = 'auto';
-});
-// 画像読み込み
+/* =========================
+   画像読み込み
+========================= */
 fileInput.addEventListener('change', (e) => {
   const files = Array.from(e.target.files);
+  const srcList = files.sort(naturalSort).map(f => URL.createObjectURL(f));
+  rebuildFromPages(srcList);
+});
+
+/* =========================
+   再構築（メイン）
+========================= */
+function rebuildFromPages(pages) {
   viewer.innerHTML = '';
-  createSpreads(files);
-});
 
-document.addEventListener('click', (e) => {
-  // UI内クリックは無視
-  if (e.target.closest('#ui')) return;
-
-  // ボタン操作も無視
-  if (e.target.closest('.btn')) return;
-
-  document.body.classList.toggle('hide-ui');
-});
-
-// テーマ切替
-themeBtn.onclick = (e) => {
-  e.stopPropagation();
-  document.body.classList.toggle('dark');
-};
-/* ===== 並び替えモード ===== */
-function toggleSortMode() {
-  isSortMode = !isSortMode;
-
-  const btn = document.getElementById('sortBtn');
-
-  // ボタン表示切替
-  btn.textContent = isSortMode ? '並び替え終了' : '並び替え';
-
-  // クラス切替（CSSで制御）
-  document.body.classList.toggle('sort-mode', isSortMode);
-};
-
-// 見開きスプレッド作成
-function createSpreads(files) {
-
-  files.sort(naturalSort); //
   let pageNum = 1;
 
-  if (files[0]) viewer.appendChild(createSpread([files[0]], pageNum++));
+  // 表紙
+  if (pages[0]) {
+    viewer.appendChild(createSpread(pages.slice(0, 1), pageNum++));
+  }
 
-  for (let i = 1; i < files.length; i += 2) {
-    const pair = [files[i], files[i + 1]].filter(Boolean);
+  // 見開き
+  for (let i = 1; i < pages.length; i += 2) {
+    const pair = pages.slice(i, i + 2);
     viewer.appendChild(createSpread(pair, pageNum));
     pageNum += pair.length;
   }
-  applyBinding();
 }
 
-// スプレッド作成
+/* =========================
+   スプレッド生成
+========================= */
 function createSpread(pages, pageNum) {
   const spread = document.createElement('div');
   spread.className = 'spread';
 
-  pages.forEach(file => {
+  pages.forEach((src) => {
     const page = document.createElement('div');
     page.className = 'page';
+
     const img = document.createElement('img');
-    img.src = URL.createObjectURL(file);
+    img.src = src;
+
     page.appendChild(img);
+
+    // ←
+    const left = document.createElement('button');
+    left.textContent = '←';
+    left.onclick = (e) => {
+  e.stopPropagation();
+
+  if (!selectedPage) return;
+
+  const index = getPageIndex(selectedPage);
+  movePage(index, -1);
+};
+    // →
+    const right = document.createElement('button');
+    right.textContent = '→';
+    right.onclick = (e) => {
+  e.stopPropagation();
+
+  if (!selectedPage) return;
+
+  const index = getPageIndex(selectedPage);
+  movePage(index, 1);
+};
+
+    page.appendChild(left);
+    page.appendChild(right);
+
     spread.appendChild(page);
-  });
 
-  const label = document.createElement('div');
-  label.className = 'page-number';
-  label.textContent = pages.length === 2 ? `${pageNum}-${pageNum+1}` : `${pageNum}`;
-  spread.appendChild(label);
-
-  // ←ボタン
-const leftBtn = document.createElement('button');
-leftBtn.className = 'move-left-btn';
-leftBtn.textContent = '←';
-leftBtn.onclick = (e) => {
+    // 追加ボタン
+const addBtn = document.createElement('button');
+addBtn.className = 'add-btn';
+addBtn.textContent = '+';
+addBtn.onclick = (e) => {
   e.stopPropagation();
-  moveSpread(spread, -1);
+  const index = getPageIndex(page);
+  const pages = getAllPages();
+  pages.splice(index + 1, 0, pages[index]); // 複製
+  rebuildFromPages(pages);
 };
-spread.appendChild(leftBtn);
 
-// →ボタン
-const rightBtn = document.createElement('button');
-rightBtn.className = 'move-right-btn';
-rightBtn.textContent = '→';
-rightBtn.onclick = (e) => {
+// 削除ボタン
+const delBtn = document.createElement('button');
+delBtn.className = 'delete-btn';
+delBtn.textContent = '×';
+delBtn.onclick = (e) => {
   e.stopPropagation();
-  moveSpread(spread, 1);
+  const index = getPageIndex(page);
+  const pages = getAllPages();
+  pages.splice(index, 1);
+  rebuildFromPages(pages);
 };
-spread.appendChild(rightBtn);
 
-  // 削除ボタン
-  const del = document.createElement('button');
-  del.className = 'delete-btn';
-  del.textContent = '×';
-  del.onclick = (e) => {
-    e.stopPropagation();
-    spread.remove();
-    updatePageNumbers();
-  };
-  spread.appendChild(del);
+page.appendChild(addBtn);
+page.appendChild(delBtn);
 
-  // 追加ボタン
-  const add = document.createElement('button');
-  add.className = 'add-btn';
-  add.textContent = '+';
-  add.onclick = (e) => {
-    e.stopPropagation();
-    const tempInput = document.createElement('input');
-    tempInput.type = 'file';
-    tempInput.multiple = true;
-    tempInput.accept = 'image/*';
-    tempInput.addEventListener('change', (ev) => {
-      const newFiles = Array.from(ev.target.files);
-      newFiles.forEach(file => {
-        const page = document.createElement('div');
-        page.className = 'page';
-        const img = document.createElement('img');
-        img.src = URL.createObjectURL(file);
-        page.appendChild(img);
-        if (isRightBinding) spread.insertBefore(page, spread.firstChild);
-        else spread.appendChild(page);
-      });
-      updatePageNumbers();
-    });
-    tempInput.click();
-  };
-  spread.appendChild(add);
+left.className = 'move-left-btn';
+right.className = 'move-right-btn';
 
-  enableDrag(spread);
-  return spread;
-  
-}
+page.onclick = () => {
 
-function moveSpread(target, direction) {
-  const sibling = direction === -1
-    ? target.previousElementSibling
-    : target.nextElementSibling;
+  // ソートモードじゃなければ何もしない
+  if (!isSortMode) return;
 
-  if (!sibling) return;
-
-  if (direction === -1) {
-    viewer.insertBefore(target, sibling);
-  } else {
-    viewer.insertBefore(sibling, target);
+  if (selectedPage === page) {
+  page.classList.remove('selected');
+  selectedPage = null;
+  return;
   }
 
-  updatePageNumbers();
+  // 前の選択解除
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.remove('selected');
+  });
+
+  // 新しく選択
+  page.classList.add('selected');
+  selectedPage = page;
+};
+
+  });
+
+
+  // ページ番号
+  const label = document.createElement('div');
+  label.className = 'pageNumber';
+  label.textContent = pages.length === 2
+    ? `${pageNum}-${pageNum + 1}`
+    : `${pageNum}`;
+  spread.appendChild(label);
+
+  return spread;
 }
+
+/* =========================
+   ページ取得
+========================= */
+function getAllPages() {
+  return Array.from(document.querySelectorAll('.page img'))
+    .map(img => img.src);
+}
+
+/* =========================
+   ページ移動
+========================= */
+function movePage(index, direction) {
+  const pages = getAllPages();
+
+  const target = index + direction;
+  if (target < 0 || target >= pages.length) return;
+
+  [pages[index], pages[target]] = [pages[target], pages[index]];
+
+  rebuildFromPages(pages);
+
+  // 再選択
+setTimeout(() => {
+  const pages = document.querySelectorAll('.page');
+  if (pages[index + direction]) {
+    pages[index + direction].classList.add('selected');
+    selectedPage = pages[index + direction];
+  }
+}, 0);
+}
+/* =========================
+   index取得
+========================= */
+function getPageIndex(targetPage) {
+  return Array.from(document.querySelectorAll('.page')).indexOf(targetPage);
+}
+
+/* =========================
+   並び替えモード
+========================= */
+function toggleSortMode() {
+  isSortMode = !isSortMode;
+  document.body.classList.toggle('sort-mode', isSortMode);
+  sortBtn.textContent = isSortMode ? '並び替え終了' : '並び替え';
+}
+
+/* =========================
+   綴じ方向
+========================= */
+function toggleBinding() {
+  isRightBinding = !isRightBinding;
+  viewer.classList.toggle('rtl', isRightBinding);
+  bindingBtn.textContent = isRightBinding ? '右綴じ' : '左綴じ';
+}
+
+/* =========================
+   テーマ（ライト切替）
+========================= */
+const savedTheme = localStorage.getItem('theme');
+
+if (savedTheme === 'light') {
+  document.body.classList.add('light');
+  themeBtn.textContent = 'ダークモード';
+} else {
+  themeBtn.textContent = 'ライトモード';
+}
+
+themeBtn.onclick = () => {
+  const isLight = document.body.classList.toggle('light');
+
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+
+  themeBtn.textContent = isLight
+    ? 'ダークモード'
+    : 'ライトモード';
+};
+/* =========================
+   ボタン紐付け
+========================= */
+bindingBtn.onclick = toggleBinding;
+
+window.addEventListener('DOMContentLoaded', () => {
+
+  sortBtn.addEventListener('click', () => {
+
+    isSortMode = !isSortMode;
+    document.body.classList.toggle('sort-mode', isSortMode);
+
+    sortBtn.textContent = isSortMode
+      ? '並び替え終了'
+      : '並び替え';
+  });
+
+});
+
+function toggleUI() {
+  document.getElementById('uiBar').classList.toggle('hiddenUI');
+  document.querySelector('.header').classList.toggle('hiddenUI');
+}
+
+
