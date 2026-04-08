@@ -3,24 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>見開きビューア</title>
+  <title>MIHIRAKI</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+<!-- ヘッダー -->
 <div class="header">
   <div>EASY viewer</div>
   <input type="file" id="fileInput" multiple accept="image/*">
 </div>
 
+<!-- ビュー -->
 <div class="viewer" id="viewer"></div>
 
+<!-- 下UI -->
 <div class="bottom" id="uiBar">
-  <div class="btn" onclick="toggleTheme()">theme</div>
+  <div class="btn" onclick="toggleTheme()" id="themeBtn">ライトモード</div>
   <div class="btn" onclick="toggleBinding()" id="bindingBtn">右綴じ</div>
-  <div class="btn" onclick="toggleSortMode()" id="sortBtn">並び替え</div>
+  <div class="btn"  id="sortBtn">並び替え</div>
   <div class="btn" onclick="toggleUI()">UI</div>
-  
 </div>
 
 <script src="script.js"></script>
