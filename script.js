@@ -1,7 +1,7 @@
 const viewer = document.getElementById('viewer');
 const fileInput = document.getElementById('fileInput');
 const sortBtn = document.getElementById('sortBtn');
-const bindingBtn = document.getElementById('bindingToggle');
+const bindingBtn = document.getElementById('bindingBtn');
 const themeBtn = document.getElementById('themeToggle');
 const controls = document.getElementById('controls');
 
@@ -22,33 +22,6 @@ function naturalSort(a, b) {
     sensitivity: 'base'
   });
 }
-
-/* 読み込み */
-fileInput.addEventListener('change', (e) => {
-  let files = Array.from(e.target.files);
-  files.sort(naturalSort);
-
-  viewer.innerHTML = '';
-
-  let pageNum = 1;
-  let index = 0;
-
-  // 表紙
-  if (files.length > 0) {
-    const spread = document.createElement('div');
-    spread.className = 'spread';
-
-    const page = createPage(files[0]);
-    spread.appendChild(page);
-
-    // ページ番号
-    addSpreadNumber(spread, `${pageNum}`);
-
-    viewer.appendChild(spread);
-
-    pageNum++;
-    index = 1;
-  }
 
   // 見開き
   for (let i = index; i < files.length; i += 2) {
@@ -77,7 +50,6 @@ fileInput.addEventListener('change', (e) => {
   }
 
   updateCenter();
-});
 
 /* ページ生成 */
 function createPage(file) {
@@ -139,8 +111,6 @@ function toggleBinding() {
 
   const btn = document.getElementById('bindingBtn');
   btn.textContent = isRTL ? '右綴じ' : '左綴じ';
-
-  render(); // ←再描画が必須
 }
 
 /* タップでUI */
@@ -235,6 +205,8 @@ function toggleSortMode() {
 
 // 見開きスプレッド作成
 function createSpreads(files) {
+
+  files.sort(naturalSort); //
   let pageNum = 1;
 
   if (files[0]) viewer.appendChild(createSpread([files[0]], pageNum++));
@@ -244,7 +216,6 @@ function createSpreads(files) {
     viewer.appendChild(createSpread(pair, pageNum));
     pageNum += pair.length;
   }
-
   applyBinding();
 }
 
@@ -266,6 +237,26 @@ function createSpread(pages, pageNum) {
   label.className = 'page-number';
   label.textContent = pages.length === 2 ? `${pageNum}-${pageNum+1}` : `${pageNum}`;
   spread.appendChild(label);
+
+  // ←ボタン
+const leftBtn = document.createElement('button');
+leftBtn.className = 'move-left-btn';
+leftBtn.textContent = '←';
+leftBtn.onclick = (e) => {
+  e.stopPropagation();
+  moveSpread(spread, -1);
+};
+spread.appendChild(leftBtn);
+
+// →ボタン
+const rightBtn = document.createElement('button');
+rightBtn.className = 'move-right-btn';
+rightBtn.textContent = '→';
+rightBtn.onclick = (e) => {
+  e.stopPropagation();
+  moveSpread(spread, 1);
+};
+spread.appendChild(rightBtn);
 
   // 削除ボタン
   const del = document.createElement('button');
@@ -307,24 +298,21 @@ function createSpread(pages, pageNum) {
 
   enableDrag(spread);
   return spread;
+  
 }
 
-// 並び替えドラッグ
-function enableDrag(spread) {
-  spread.draggable = true;
+function moveSpread(target, direction) {
+  const sibling = direction === -1
+    ? target.previousElementSibling
+    : target.nextElementSibling;
 
-  spread.addEventListener('dragstart', (e) => {
-    if (!isSortMode) return e.preventDefault();
-    dragged = spread;
-  });
+  if (!sibling) return;
 
-  spread.addEventListener('dragover', (e) => e.preventDefault());
+  if (direction === -1) {
+    viewer.insertBefore(target, sibling);
+  } else {
+    viewer.insertBefore(sibling, target);
+  }
 
-  spread.addEventListener('drop', (e) => {
-    e.preventDefault();
-    if (dragged && dragged !== spread) {
-      spread.before(dragged);
-      updatePageNumbers();
-    }
-  });
+  updatePageNumbers();
 }
