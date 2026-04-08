@@ -261,3 +261,24 @@ body.sort-mode .add-btn,
 body.sort-mode .delete-btn {
   display: block;
 }
+.move-left-btn,
+.move-right-btn {
+  display: none;
+  position: absolute;
+  top: 4px;
+  background: #00ada9;
+  color: white;
+  border: none;
+  padding: 4px 6px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.move-left-btn { left: 40px; }
+.move-right-btn { left: 70px; }
+
+/* 並び替えモードで表示 */
+body.sort-mode .move-left-btn,
+body.sort-mode .move-right-btn {
+  display: block;
+}
