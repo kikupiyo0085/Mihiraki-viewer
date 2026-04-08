@@ -3,14 +3,26 @@
   --bg-sub: rgba(57, 65, 65, 0.795);
   --text: #fff;
   --viewer-bg: #dddddd;
-  --accent: #ff86b4;
+  --accent: #00ada9; /* ←統一 */
 }
-
 body.light {
+  --page-bg: #ffffff;
   --bg-main: #c0c3c5;
   --bg-sub: rgba(174, 180, 179, 0.87);
-  --text: #ffffff;
+  --text: #222;
   --viewer-bg: #f0f0f0;
+}
+body.light .btn {
+  background: rgba(0,0,0,0.05);
+  color: #222;
+}
+
+body.light #viewer {
+  background: #f5f5f5;
+}
+
+body.light .page {
+  background: #fff;
 }
 
 body {
@@ -19,6 +31,9 @@ body {
   color: var(--text);
   font-family: sans-serif;
   overflow: hidden;
+  transition: background 0.3s, color 0.3s;
+
+  
 }
 
 .header {
@@ -85,9 +100,10 @@ body {
 .page {
   width: 40%;
   aspect-ratio: 3/4;
-  background: white;
+  background: var(--page-bg, white);
   border-radius: 6px;
   overflow: hidden;
+  transition: background 0.3s;
 }
 
 .page img {
@@ -101,7 +117,7 @@ body {
 }
 
 .bottom {
-  position: fixed;
+  position: absolute;
   bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
@@ -111,6 +127,7 @@ body {
   border-radius: 30px;
   background: var(--bg-sub);
   backdrop-filter: blur(10px);
+  transition: all 0.2s;
 }
 
 :root {
@@ -261,6 +278,11 @@ body.sort-mode .add-btn,
 body.sort-mode .delete-btn {
   display: block;
 }
+
+body.sort-mode .page {
+  outline: 2px solid var(--accent);
+  transform: scale(1.02);
+}
 .move-left-btn,
 .move-right-btn {
   display: none;
@@ -277,8 +299,30 @@ body.sort-mode .delete-btn {
 .move-left-btn { left: 40px; }
 .move-right-btn { left: 70px; }
 
+body:not(.sort-mode) button {
+  display: none;
+}
+
 /* 並び替えモードで表示 */
 body.sort-mode .move-left-btn,
 body.sort-mode .move-right-btn {
+  display: block;
+}
+
+/* 選択中 */
+.page.selected {
+  outline: 3px solid var(--accent);
+  transform: scale(1.05);
+}
+
+/* 通常は矢印隠す */
+.move-left-btn,
+.move-right-btn {
+  display: none;
+}
+
+/* 選択中だけ表示 */
+.page.selected .move-left-btn,
+.page.selected .move-right-btn {
   display: block;
 }
